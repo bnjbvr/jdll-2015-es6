@@ -48,6 +48,7 @@ class: center, middle
 à cause de ses liens avec Java), rapidement renommé en JavaScript (parce que
 Netscape s'est mis à supporter les applets Java en même temps).
 - Notez qu'à l'origine, JavaScript s'utilisait déjà côté serveur !
+- A qui s'adresse cette conférence : développeurs qui connaissent déjà JS
 
 ---
 
@@ -71,25 +72,604 @@ standardisation en Juin 1997 par Ecma International.
 - Plusieurs versions sortent: la deuxième en Juin 1998, la troisième en
 Décembre 1999, la quatrième ne sortira jamais, la 5ème sort en Décembre 2009.
 - Cette conférence parle de la sixième version de la spécification, qui va être
-finalisée au cours de cette année (juin / juillet ?).
+finalisée au cours de cette année (juin).
 
 ---
 
-class: middle
-
-# Sucre syntaxique
+# Destructuring
 
 ```javascript
-sugar();
+// Arrays
+var [a, b] = [1, 2]; // a === 1, b === 2
+
+var [a, , b] = [1, 2, 3]; // a === 1, b === 2;
+var [a, b] = [13]; // a === 13, b === undefined
+
+// Fast swap
+var [a, b] = [b, a];
+
+// Objects
+// a == 'num', b == '1337'
+var {key: a, val: b} = {key: 'num', val: 1337, something: true};
+
+function f() { return {a: 'hello', b: 'world'} }
+var {a, b} = f(); // shortcut for {a:a, b:b}, so a === 'hello', b === 'world'
+
+// In depth:
+var {file: {identifier: x, isOpen}} = { file: {identifier: 0, isOpen: false} };
+
+// Parameter position
+function g({name: x}) { console.log(x); }
 
 ```
 
 ???
 
-- pour faire un benchmark, créer une boucle qui va lancer du code de
-nombreuses fois, et diviser le temps pris par le nombre de tours de boucle pour
-avoir une idée du temps pris par tour de boucle. Lancer au moins 10000 fois.
-- qu'est ce qui ne va pas dans ce benchmark ?
+- On peut sauter des éléments (example 2)
+- l'ordre d'initialisation pour les objects est : élément de droite reçoit
+élément de gauche
+
+---
+
+# Shorthand
+
+```javascript
+var name = 'georges';
+var obj = {
+    name, // shorthand for name: name
+    doSomething() {}, // shorthand for doSomething: function doSomething() {}
+    [ 'do' + name ]: 42 // shorthand for obj['do' + name] = 42;
+}
+```
+
+---
+
+# Rest parameters: le problème
+
+```javascript
+function f(key, value) {
+    var otherArgs = Array.prototype.slice.call(arguments, 2);
+    // otherArgs is an Array containing parameters other than key and value
+    console.log(otherArgs[0]);
+}
+
+f(1, 2, 3); // logs 3
+```
+
+---
+
+# Rest parameters: la solution
+
+```javascript
+function f(key, value, ...otherArgs) {
+    // otherArgs is an Array containing parameters other than key and value
+    // no more arguments hackery, you'll love it
+    console.log(otherArgs[0]);
+}
+
+f(1, 2, 3); // logs 3
+```
+
+---
+
+# Spread operator: le problème
+
+```javascript
+function Client(name, age, height, eyesColor) {}
+
+function g(age) {
+    var args = ['NYI', 'unknown'];
+    // The issue:
+    Client('georges', age, args[0], args[1]);
+    // Another way to do it:
+    args = ['georges', name].concat(args);
+    Client.prototype.apply(null, args); // beurk
+}
+```
+
+---
+
+# Spread operator: la solution
+
+```javascript
+function Client(name, age, height, eyesColor) {}
+
+function g(age) {
+    var args = ['NYI', 'unknown'];
+    Client('georges', age, ...args); // Spread operator
+}
+```
+
+---
+
+# Default parameters: le problème
+
+```javascript
+function func(err, optionalArg, secondOptionalArg, callback) {
+
+    if (typeof callback === 'undefined') {
+        callback = secondOptionalArg;
+        secondOptionalArg = {};
+    }
+    if (typeof callback === 'undefined') {
+        callback = optionalArg;
+        optionalArg = 'default';
+    }
+    // Proportional to the number of default parameters...
+
+    callback(err, optionalArg, secondOptionalArg);
+}
+```
+
+---
+
+# Default parameters: la solution
+
+```javascript
+function func(err, optionalArg = 'default', secondOptionalArg = {}, callback) {
+    callback(err, optionalArg, secondOptionalArg);
+}
+```
+
+---
+
+# Symbols : le problème
+
+```javascript
+var obj = (function() {
+
+    var map = {};
+    map['ultra-complicated-and-secret-password'] = 'pony4lyfe';
+
+    return {
+        map: map,
+        connect: function() {
+            sendRequest(map['ultra-complicated-and-secret-password']);
+        }
+    };
+})();
+
+console.log(obj['ultra-complicated-and-secret-password']);
+// Now I can steal your secrets!
+
+```
+
+---
+
+# Symbols : la solution
+
+```javascript
+var obj = (function() {
+
+    var passKey = new Symbol('ultra-complicated-and-secret-password');
+
+    var map = {};
+
+    map[passKey] = 'pony4lyfe';
+
+    return {
+        map,
+        connect() {
+            sendRequest(map[passKey]);
+        }
+    };
+})();
+
+console.log(obj['ultra-complicated-and-secret-password']); // undefined
+```
+
+---
+
+# Symbol.iterator
+
+```javascript
+var myIterator = {
+    [Symbol.iterator]: function() {
+
+        var i = 0;
+        var done = false;
+
+        function next() {
+            if (i == 10) {
+                done = true;
+            }
+            i += 1;
+            // Iterator value
+            return {
+                done: done,
+                value: i
+            }
+        }
+
+        // iterator object
+        return {
+            next: next,
+        }
+    }
+}
+```
+
+---
+
+# For-of loop
+
+```javascript
+var iter = myIterator();
+while (true) {
+    var step = iter.next();
+    if (step.done)
+        break;
+    console.log(step.value);
+}
+
+// Or with the for-of loop
+for (var x of myIterator) {
+    console.log(x);
+}
+
+// The good news is: a few builtins already have [Symbol.Iterator]
+for (var x of [1, 2, 3, 4]) {
+    console.log(x); // prints 1, then 2,...
+}
+```
+
+???
+
+modulo exceptions!
+
+---
+
+# Generators
+
+```javascript
+function *range(start, end) {
+    console.log('starting');
+    var i = start;
+    while (i < end)
+        yield ++i;
+}
+
+var gen = range(0, 2); // nothing happens
+console.log(gen); // { next: function() {}, throw: function() {} }
+gen.next(); // prints 'starting', {value: 1, done: false}
+gen.next(); // {value: 2, done: false}
+gen.next(); // {value: undefined, done: true}
+
+for (var x of range(13, 37)) {}
+```
+
+???
+
+- Générateurs sont des fonctions qui peuvent être mises en pause
+- Et qui respectent le design iterator!
+
+---
+
+# Generators and async code
+
+```javascript
+function *sum() {
+    var x = yield 1;
+    var y = yield 2;
+    return x + y;
+}
+
+var g = sum();
+g.next(); // 1
+g.next(13); // internal x in g === 13, value is 2
+g.next(37); // internal y in g === 37, value is x + y === 50, done
+```
+
+???
+
+Peuvent être utilisées pour gérer du code asynchrone!
+
+---
+
+# Promises : le problème
+
+```javascript
+doStuff(42, function(err, num) {
+    if (err) {
+        console.log('Error when doing stuff:' + err.toString());
+    } else {
+        fs.open('./horse.js', 777, function(err, fd) {
+            if (err) {
+                console.log('Error when opening file: ' + err.toString());
+            } else {
+                fs.write(fd, num, function(err) {
+                    if (err) {
+                        console.log('I love having 6 indent levels <3');
+                    } else {
+                        console.log('Look at this braces pyramid');
+                    }
+                }
+            }
+        }
+    }
+});
+
+```
+
+---
+
+# Promises : Approche
+
+```javascript
+function openWrapper(resolve, reject) {
+    fs.open('./horse.js', 777, function(err, fd) {
+        if (err)
+            reject(err);
+        else
+            resolve(fd);
+    });
+})
+function writeWrapper(fd, value, resolve, reject) {
+    fs.write(fd, value, function(err) {
+        if (err)
+            reject(err);
+        else
+            resolve();
+    })
+}
+function reject(err) {
+    console.error('Error: ', err);
+}
+openWrapper(function(fd) {
+    writeWrapper(fd, '42', function() {
+        console.log('it worked!');
+    }, reject);
+}, reject);
+
+```
+
+???
+
+Pas vraiment mieux, bien que ce soit plus lisible!
+
+---
+
+# Promises : Solution
+
+```javascript
+function openWrapper(resolve, reject) {
+    fs.open('./horse.js', 777, function(err, fd) {
+        if (err)
+            reject(err);
+        else
+            resolve(fd);
+    });
+}
+function writeWrapper(fd, value) {
+    return function(resolve, reject) {
+        fs.write(fd, value, function(err) {
+            if (err)
+                reject(err);
+            else
+                resolve();
+        })
+    }
+}
+var pOpen = new Promise(openWrapper);
+pOpen.then(function(fd) {
+    return new Promise(writeWrapper(fd, 'hello world'));
+}).then(function() {
+    console.log('it worked!');
+}).catch(function(err) {
+    console.error('Error: ', err);
+});
+```
+
+---
+
+# Template strings : le problème
+
+```javascript
+function renderElement(title, text, style) {
+    return "" +
+        "<h1>" + title + "</h1>\n" +
+        "<p style='" + style + "'>" +
+            "Here's a text I would like to share with you: '" + text +
+            "\nAnd note that 1 + 1 == " + (1+1) +
+        "'</p>";
+}
+```
+
+---
+
+# Template strings : la solution
+
+```javascript
+function renderElement(title, text, style) {
+    return `
+        <h1>${title}</h1>
+        <p style='${style}'>
+            Here's a text I would like to share with you: '${text}'
+            And note that 1 + 1 == ${1 + 1}
+        </p>
+    `;
+}
+```
+
+???
+
+- Chaînes de caractère multi lignes
+- Interpolation pure et simple de JS
+
+---
+
+# Tagged template strings
+
+```javascript
+function upperCase(strings, repl) {
+    return strings[0] + repl.toUpperCase();
+}
+
+var something = 'hello, world';
+
+console.log(upperCase`
+    Somebody just said: ${something}
+`);
+// Somebody just said: HELLO, WORLD
+```
+
+???
+
+- Permet de changer les valeurs d'interpolation, utile pour filtrer du texte, remplacer
+des chaînes dans les valeurs, etc.
+
+---
+
+# Arrow function: le problème
+
+```javascript
+function Archer() {
+    this.arrow = 100;
+    setInterval(function() {
+        if (this.arrow)
+            this.arrow--;
+    }, 1000);
+}
+```
+
+---
+
+# Arrow function: la fausse solution
+
+```javascript
+function Archer() {
+    this.arrow = 100;
+    var self = this;
+    setInterval(function() {
+        if (self.arrow)
+            self.arrow--;
+    }, 1000);
+    // Or
+    setInterval(function() {
+        if (this.arrow)
+            this.arrow--;
+    }.bind(this), 1000);
+}
+```
+
+---
+
+# Arrow function: la solution
+
+```javascript
+function Archer() {
+    this.arrow = 100;
+    var self = this;
+    setInterval(() => {
+        if (this.arrow)
+            this.arrow--;
+    }, 1000);
+}
+```
+
+---
+
+# Block scoping : le problème
+
+```javascript
+function() {
+    for (var i = 0; i < 10; i++) {
+        var elem = document.getElementById('myElem' + i)
+        elem.onclick = function() {
+            console.log('You clicked on ' + i);
+        };
+    }
+}
+
+// Is equivalent to
+function() {
+    var i, elem;
+    for (i = 0; i < 10; i++) {
+        elem = document.getElementById('myElem' + i)
+        elem.onclick = function() {
+            console.log('You clicked on ' + i);
+        };
+    }
+}
+```
+
+---
+
+# Block scoping : let/const
+
+```javascript
+function() {
+    for (let i = 0; i < 10; i++) {
+        let elem = document.getElementById('myElem' + i)
+        elem.onclick = function() {
+            console.log('You clicked on ' + i);
+        };
+    }
+}
+
+function() {
+    if (true) {
+        const x = 42;
+        x = 43; // Error: x is a const variable!
+
+        const y; // Error: const needs an initializer!
+
+        console.log(z + 4); // Error: Can't access uninitialized lexical!
+        let z = 1;
+
+        {
+            let w = 2;
+        }
+        print(w); // Error: w isn't defined
+    }
+}
+```
+
+---
+
+# Modules: Le problème
+
+- CommonJS vs AMD
+- `require` in node.js
+
+---
+
+# Modules: La solution: lib
+
+```javascript
+var privateProperty = 1;
+export var publicProperty = 2
+
+function privateFunction() { /* ... */ }
+export function publicFunction() { /* ... */ }
+
+export default function () { /*  */ }
+```
+
+---
+
+# Modules: La solution: client
+
+```javascript
+import { publicProperty, publicFunction } from 'lib';
+// publicProperty = 2, publicFunction = function () { /* ... */ }
+
+import { publicFunction as libfunc } from 'lib';
+// libfunc = function() { /* ... */ }
+
+import { default as foo } from 'lib';
+import foo from 'lib';
+// foo now contains the default function
+
+import * as mylib from 'lib';
+// mylib = { publicProperty: 2, publicFunction: function() { /* ... */}}
+```
+
+---
+
+# Modules loaders
+
+- TBD
 
 ---
 
@@ -97,15 +677,42 @@ class: middle center
 
 # Merci de votre attention
 
-## .link[[@njbenji](https://twitter.com/njbenji)]
+.logo[![Center-aligned image](img/firefox.png)]
+
+## .link[[@bnjbvr](https://twitter.com/bnjbvr)]
+## .link[[ben@mozilla.com](mailto:ben@mozilla.com)]
 
 ???
 
-Si vous trouvez des cas où Firefox est considérablement plus lent que Chrome ou
-Safari ou Internet Explorer sur un micro benchmark JS, merci de nous le
-signaler (via par twitter directement vers moi @njbenji, en FR ou en EN), soit
-sur le site https://bugzilla.mozilla.org, ouvrir un nouveau bug (en anglais)
-dans le Component Core / JavaScript Engine.
+---
+
+# Bonus: Promises all the things!
+
+```javascript
+function promisify(func) {
+    return function(...args) {
+        return new Promise(function(resolve, reject) {
+            func(...args, function(err, ...rest) {
+                if (err)
+                    return reject(err);
+                resolve(...rest);
+            });
+        });
+    }
+}
+
+var popen = promisify(fs.open);
+var pwrite = promisify(fs.write);
+popen('./horse.js', 'w+').then(function(fd) {
+    return pwrite(fd, 'hello world');
+}).then(function() {
+    console.log('all went smoothly');
+}).catch(function(err) {
+    console.error('an unexpected error occurred');
+    console.error(err.tostring());
+});
+```
+
 
     </textarea>
     <script src="https://gnab.github.io/remark/downloads/remark-latest.min.js">
