@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Ecmascript 6: Le Futur De JavaScript</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <style type="text/css">
+      @import url(https://fonts.googleapis.com/css?family=Yanone+Kaffeesatz);
+      @import url(https://fonts.googleapis.com/css?family=Droid+Serif:400,700,400italic);
+      @import url(https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,400italic);
+
+      body { font-family: 'Droid Serif'; }
+      h1, h2, h3 {
+        font-family: 'Yanone Kaffeesatz';
+        font-weight: normal;
+      }
+      .remark-code, .remark-inline-code { font-family: 'Ubuntu Mono'; }
+      .logo img { height: 13em; }
+      .italic { font-style: italic; }
+      .link a { text-decoration: none }
+    </style>
+  </head>
+  <body>
+    <textarea id="source">
+
+class: center, middle
+
+# ECMAscript 6
+
+## Le futur de JavaScript
+
+???
+
+Notez la casse !
+
+---
+
+class: center, middle
+
+.logo[![Left-aligned image](img/logo.png)]
+.logo[![Right-aligned image](img/eich.jpg)]
+
+.
+
+???
+
+- Langage de script pour le web, inventé par Brendan Eich.
+- Sorti en Décembre 1995 sous le nom de LiveScript (il devait s'appeler Mocha au début,
+à cause de ses liens avec Java), rapidement renommé en JavaScript (parce que
+Netscape s'est mis à supporter les applets Java en même temps).
+- Notez qu'à l'origine, JavaScript s'utilisait déjà côté serveur !
+
+---
+
+class: middle
+
+# Un peu de vocabulaire
+
+- JScript
+- Ecma International
+- ECMA-262
+- TC39
+
+???
+
+- Microsoft sort sa propre version, JScript en 1996.
+- On se rend vite compte que des fonctionnalités qui ne marchent que sur un
+seul navigateur limitent trop les visiteurs d'un site, début de la
+standardisation en Juin 1997 par Ecma International.
+- La standardisation parle d'ECMAScript d'après la spécification ECMA-262.
+- Le comité qui s'occupe de la spécification est le TC39.
+- Plusieurs versions sortent: la deuxième en Juin 1998, la troisième en
+Décembre 1999, la quatrième ne sortira jamais, la 5ème sort en Décembre 2009.
+- Cette conférence parle de la sixième version de la spécification, qui va être
+finalisée au cours de cette année (juin / juillet ?).
+
+---
+
+class: middle
+
+# Sucre syntaxique
+
+```javascript
+sugar();
+
+```
+
+???
+
+- pour faire un benchmark, créer une boucle qui va lancer du code de
+nombreuses fois, et diviser le temps pris par le nombre de tours de boucle pour
+avoir une idée du temps pris par tour de boucle. Lancer au moins 10000 fois.
+- qu'est ce qui ne va pas dans ce benchmark ?
+
+---
+
+class: middle center
+
+# Merci de votre attention
+
+## .link[[@njbenji](https://twitter.com/njbenji)]
+
+???
+
+Si vous trouvez des cas où Firefox est considérablement plus lent que Chrome ou
+Safari ou Internet Explorer sur un micro benchmark JS, merci de nous le
+signaler (via par twitter directement vers moi @njbenji, en FR ou en EN), soit
+sur le site https://bugzilla.mozilla.org, ouvrir un nouveau bug (en anglais)
+dans le Component Core / JavaScript Engine.
+
+    </textarea>
+    <script src="https://gnab.github.io/remark/downloads/remark-latest.min.js">
+    </script>
+    <script>
+      var slideshow = remark.create();
+    </script>
+  </body>
+</html>
