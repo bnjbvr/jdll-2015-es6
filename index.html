@@ -39,8 +39,6 @@ class: center, middle
 .logo[![Left-aligned image](img/logo.png)]
 .logo[![Right-aligned image](img/eich.jpg)]
 
-.
-
 ???
 
 - Langage de script pour le web, inventé par Brendan Eich.
@@ -52,14 +50,15 @@ Netscape s'est mis à supporter les applets Java en même temps).
 
 ---
 
-class: middle
-
 # Un peu de vocabulaire
 
+- Mocha / LiveScript / JavaScript
 - JScript
 - Ecma International
 - ECMA-262
+- ECMAScript
 - TC39
+- ES6 / ES2015
 
 ???
 
@@ -73,6 +72,12 @@ standardisation en Juin 1997 par Ecma International.
 Décembre 1999, la quatrième ne sortira jamais, la 5ème sort en Décembre 2009.
 - Cette conférence parle de la sixième version de la spécification, qui va être
 finalisée au cours de cette année (juin).
+
+---
+
+class: center, middle
+
+# C'est parti !
 
 ---
 
@@ -93,7 +98,7 @@ var [a, b] = [b, a];
 var {key: a, val: b} = {key: 'num', val: 1337, something: true};
 
 function f() { return {a: 'hello', b: 'world'} }
-var {a, b} = f(); // shortcut for {a:a, b:b}, so a === 'hello', b === 'world'
+var {a, b} = f(); // shorthand for {a:a, b:b}, so a === 'hello', b === 'world'
 
 // In depth:
 var {file: {identifier: x, isOpen}} = { file: {identifier: 0, isOpen: false} };
@@ -264,11 +269,13 @@ console.log(obj['ultra-complicated-and-secret-password']); // undefined
 
 ```javascript
 var myIterator = {
+    // Define [Symbol.iterator]
     [Symbol.iterator]: function() {
 
         var i = 0;
         var done = false;
 
+        // Define next() that returns an iterator value
         function next() {
             if (i == 10) {
                 done = true;
@@ -559,7 +566,6 @@ function Archer() {
 ```javascript
 function Archer() {
     this.arrow = 100;
-    var self = this;
     setInterval(() => {
         if (this.arrow)
             this.arrow--;
@@ -631,6 +637,7 @@ function() {
 
 - CommonJS vs AMD
 - `require` in node.js
+- Charger des bibliothèques avec des xhr ?
 
 ---
 
@@ -673,6 +680,198 @@ des modules (System, via URL, via XHR, etc.)
 
 ---
 
+# Map / Set: Le problème
+
+```javascript
+var map = {};
+map['name'] = map['name'] || 'None';
+map['name'] = 42;
+if ('name' in map) {
+    console.log('map.name exists');
+}
+
+var set = {};
+set['isConfigured'] = true;
+if (set['isConfigured']) {
+    // do something
+    delete set['isConfigured'];
+}
+```
+
+---
+
+# Map / Set: La solution
+
+```javascript
+var map = new Map();
+map.get('name');
+map.set('name', 42);
+if (map.has('name')) {
+    console.log('map contains name');
+}
+// It has a Symbol.iterator!
+for (var [key, val] of map) {
+    console.log(key, val);
+}
+
+var set = new Set();
+set.add('isConfigured');
+if (set.has('isConfigured')) {
+    // do something
+    set.delete('isConfigured');
+}
+// It has a Symbol.iterator!
+for (var val of set) {
+    console.log(val);
+}
+```
+
+???
+
+- Il existe des variantes WeakMap / WeakSet, dont les clés sont référencées de
+manière faible (pour éviter les fuites mémoires).
+
+---
+
+# Classes : Héritage en JavaScript
+
+```javascript
+function Parent(name) {
+    this.name = name; // Instance attribute
+}
+// Method attribute
+Parent.prototype.sayHello = function() {
+    console.log("Hi, I am " + this.name + "!");
+}
+// Static method
+Parent.getNumInstances = function() {
+    Parent.instances = Parent.instances || 0;
+    return Parent.instances
+};
+// How to instantiate?
+var p = Parent('salut');     // ?
+var p = new Parent('salut'); // ?
+
+function Inherited(name) {
+    // How to call parent method?
+    this = new Parent(name);            // ?
+    Parent.call(this, name);            // ?
+    Parent.prototype.call(this, name);  // ?
+}
+// How to inherit?
+Inherited.prototype = Parent;                   // ?
+Inherited.prototype = Parent.prototype;         // ?
+Inherited.prototype = (new Parent()).prototype; // ?
+Inherited.prototype = new Parent;               // ?
+```
+
+---
+
+# Classes : La solution
+
+```javascript
+class Parent {
+    constructor(name) {
+        this.name = name;
+    }
+    static getNumInstance() {
+        Parent.instances = Parent.instances || 0;
+        return Parent.instances;
+    }
+    sayHello() {
+        console.log(`
+            Hi, I am ${this.name}
+        `);
+    }
+}
+
+// var p = Parent(); // Throws, a class instance can't be used as a Function
+var p = new Parent('georges');
+p.sayHello();
+
+class Inherited extends Parent {
+    constructor(name) {
+        super(name);
+    }
+}
+var i = new Inherited("l'homme le plus classe du monde");
+i.sayHello();
+```
+
+???
+
+- Pas encore d'attributs statiques!
+- Il est possible d'hériter de certains builtins (Array, Map, etc.)
+
+---
+
+# Proxy : Le problème
+
+```javascript
+function PostalCode(val) {
+    this.value = val; // must be a number
+}
+PostalCode.create = function(val) {
+    if (val !== (val | 0))
+        throw new Error('not an int32!');
+    return new PostalCode;
+}
+var code = PostalCode.create(69001);
+code.val = 'i am evil';
+```
+
+---
+
+# Proxy : La solution
+
+```javascript
+function PostalCode(val) {
+    this.value = val; // must be a number
+}
+PostalCode.create = function(val) {
+    if (val !== (val | 0))
+        throw new Error('not an int32!');
+    var handler = {
+        set: function(receiver, key, val, obj) {
+            if (key === 'val' && val !== (val | 0))
+                throw new Error('not an int32');
+            receiver.val = val;
+        }
+    }
+    return new Proxy(new PostalCode(val), handler);
+}
+
+var code = PostalCode.create(69001);
+code.val = 'i am evil'; // throws
+```
+
+???
+
+- Pratique pour implémenter des ORMs !
+- Beaucoup de traps: get, set, has, deleteProperty, apply, construct,
+getOwnPropertyDescriptor, defineProperty, getPrototypeOf, setPrototypeOf,
+enumerate, ownKeys, preventExtensions, isExtensible.
+
+---
+
+# Plein d'autres fonctionnalités
+
+- Realms
+- Object.getPrototypeOf / Object.setPrototypeOf
+- Nouvelles fonctions pour les classes builtins (`Number.isNaN`, `Math.fround`, etc.)
+- Reflect API
+- Support complet d'Unicode
+
+---
+
+# Quand pourrai-je utiliser ES6?
+
+- Les navigateurs rajoutent les fonctionnalités petit à peu.
+- [traceur](https://github.com/google/traceur-compiler)
+- [babel](http://babeljs.io/) (anciennement 6to5)
+
+---
+
 class: middle center
 
 # Merci de votre attention
@@ -682,7 +881,40 @@ class: middle center
 ## .link[[@bnjbvr](https://twitter.com/bnjbvr)]
 ## .link[[ben@mozilla.com](mailto:ben@mozilla.com)]
 
+Merci à [es6features](https://github.com/lukehoban/es6features) pour l'inspiration!
+
 ???
+
+---
+
+# Bonus: Object.getPrototypeOf / Object.setPrototypeOf
+
+```javascript
+function Parent() {}
+
+var p = new Parent();
+Object.getPrototypeOf(p) == Parent; // true
+
+var obj = {};
+Object.setPrototypeOf(obj, Parent);
+
+// Bad for performance: changing internal the representation will
+// invalidate JIT code!
+```
+
+---
+
+# Bonus: Tail Position Calls
+
+```javascript
+function PTC(n, acc) {
+    if (n == 0)
+        return acc;
+    return PTC(n - 1, acc * n);
+}
+
+PTC(1000000);
+```
 
 ---
 
