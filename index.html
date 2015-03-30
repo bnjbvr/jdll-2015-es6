@@ -89,7 +89,7 @@ class: center, middle
 // Arrays
 var [a, b] = [1, 2]; // a === 1, b === 2
 
-var [a, , b] = [1, 2, 3]; // a === 1, b === 2;
+var [a, , b] = [1, 2, 3]; // a === 1, b === 3;
 var [a, b] = [13]; // a === 13, b === undefined
 
 // Fast swap
@@ -107,6 +107,7 @@ var {file: {identifier: x, isOpen}} = { file: {identifier: 0, isOpen: false} };
 
 // Parameter position
 function g({name: x}) { console.log(x); }
+g({name: 'georges');
 
 ```
 
@@ -236,7 +237,7 @@ var obj = (function() {
     };
 })();
 
-console.log(obj['ultra-complicated-and-secret-password']);
+console.log(obj.map['ultra-complicated-and-secret-password']);
 // Now I can steal your secrets!
 
 ```
@@ -262,7 +263,7 @@ var obj = (function() {
     };
 })();
 
-console.log(obj['ultra-complicated-and-secret-password']); // undefined
+console.log(obj.map['ultra-complicated-and-secret-password']); // undefined
 ```
 
 ---
@@ -539,6 +540,8 @@ function Archer() {
             this.arrow--;
     }, 1000);
 }
+
+var a = new Archer();
 ```
 
 ---
@@ -816,10 +819,10 @@ function PostalCode(val) {
 PostalCode.create = function(val) {
     if (val !== (val | 0))
         throw new Error('not an int32!');
-    return new PostalCode;
+    return new PostalCode(val);
 }
 var code = PostalCode.create(69001);
-code.val = 'i am evil';
+code.value = 'i am evil';
 ```
 
 ---
@@ -835,16 +838,16 @@ PostalCode.create = function(val) {
         throw new Error('not an int32!');
     var handler = {
         set: function(receiver, key, val, obj) {
-            if (key === 'val' && val !== (val | 0))
+            if (key === 'value' && val !== (val | 0))
                 throw new Error('not an int32');
-            receiver.val = val;
+            receiver.value = val;
         }
     }
     return new Proxy(new PostalCode(val), handler);
 }
 
 var code = PostalCode.create(69001);
-code.val = 'i am evil'; // throws
+code.value = 'i am evil'; // throws
 ```
 
 ???
@@ -862,6 +865,7 @@ enumerate, ownKeys, preventExtensions, isExtensible.
 - Object.getPrototypeOf / Object.setPrototypeOf
 - Nouvelles fonctions pour les classes builtins (`Number.isNaN`, `Math.fround`, etc.)
 - Reflect API
+- Tail Position Calls
 - Support complet d'Unicode
 
 ---
